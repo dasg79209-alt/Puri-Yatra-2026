@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puri Trip Budget Tracker</title>
+    <style>
+        /* CSS Variables for Themes */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --text-color: #ffffff;
+            --accent-color: #00f2fe;
+            --border-color: rgba(255, 255, 255, 0.2);
+            --btn-bg: #00f2fe;
+            --btn-text: #121212;
+        }
+
+        [data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #e0eacc 0%, #fcfcfc 100%);
+            --card-bg: rgba(0, 0, 0, 0.05);
+            --text-color: #1a1a1a;
+            --accent-color: #0072ff;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --btn-bg: #0072ff;
+            --btn-text: #ffffff;
+        }
+
+        /* Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background 0.5s, color 0.5s;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Full Screen Background Image Cover with Animation */
+        .bg-watermark {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: url('logo.png') no-repeat center center;
+            background-size: cover;
+            opacity: 0.08;
+            z-index: -1;
+            animation: pulseAnimation 10s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulseAnimation {
+            0%, 100% { transform: scale(1); opacity: 0.08; }
+            50% { transform: scale(1.04); opacity: 0.12; }
+        }
+
+        /* Global Fade-In Animation */
+        .animate-fade {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Auth Container */
+        .auth-container {
+            max-width: 400px;
+            margin: 60px auto;
+            padding: 30px;
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .auth-container h2 {
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            outline: none;
+        }
+
+        [data-theme="light"] .input-group input, [data-theme="light"] .input-group select {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .auth-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        
+        .show-pass-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .show-pass-label input {
+            cursor: pointer;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transform: scale(1);
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.03);
+        }
+
+        .auth-toggle, .forgot-link {
+            margin-top: 15px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: underline;
+            color: var(--accent-color);
+        }
+
+        .forgot-link {
+            display: inline-block;
+            margin-top: 0;
+            font-size: 13px;
+        }
+
+        /* Main Dashboard Layout */
+        .dashboard {
+            display: none;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .nav-controls select {
+            padding: 8px;
+            background: rgba(255,255,255,0.1);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Summary Cards - Updated for 4 columns */
+        .summary-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .summary-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .summary-card h3 {
+            font-size: 15px;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        .summary-card p {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        /* Date Tabs */
+        .date-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .tab-btn.active {
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Main Content Section */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .content-grid { grid-template-columns: 1fr; }
+            header { flex-direction: column; gap: 15px; text-align: center; }
+        }
+
+        .form-section, .history-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .form-section h3, .history-section h3 {
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        /* Expense List / History */
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--accent-color);
+            animation: fadeIn 0.4s ease;
+        }
+
+        .expense-info p {
+            font-weight: 600;
+        }
+
+        .expense-info span {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .delete-btn {
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover { background: #ff3333; }
+        
+        .empty-msg {
+            text-align: center;
+            opacity: 0.6;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Animated Full Screen Background Cover -->
+    <div class="bg-watermark"></div>
+
+    <!-- 1. AUTHENTICATION SECTION (LOGIN / REGISTER / FORGOT) -->
+    <div id="authSection" class="auth-container animate-fade">
+        <h2 id="authTitle">Puri Trip Login</h2>
+        
+        <div id="nameFieldContainer" style="display: none;">
+            <div class="input-group">
+                <label id="lblLabelName">Name</label>
+                <input type="text" id="authName" placeholder="Enter your name">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label id="lblLabelPhone">Phone Number</label>
+            <input type="tel" id="authPhone" placeholder="Enter phone number">
+        </div>
+
+        <div id="passwordFieldContainer">
+            <div class="input-group">
+                <label id="lblLabelPass">Password</label>
+                <input type="password" id="authPassword" placeholder="Enter password">
+            </div>
+        </div>
+
+        <div id="newPasswordContainer" style="display: none;">
+            <div class="input-group">
+                <label id="lblLabelNewPass">New Password</label>
+                <input type="password" id="authNewPassword" placeholder="Enter new password">
+            </div>
+        </div>
+        
+        <div class="auth-options" id="authOptionsContainer">
+            <label class="show-pass-label">
+                <input type="checkbox" id="showPassCheck" onclick="togglePasswordVisibility()"> 
+                <span id="lblShowPass">Show Password</span>
+            </label>
+            <span class="forgot-link" id="forgotLinkBtn" onclick="enableForgotMode()">Forgot Password?</span>
+        </div>
+        
+        <button class="btn" id="btnAuthSubmit" onclick="handleAuth()">Login</button>
+        <p class="auth-toggle" id="authToggleBtn" onclick="toggleAuthMode()">New user? Register here</p>
+    </div>
+
+    <!-- 2. MAIN DASHBOARD SECTION -->
+    <div id="dashboardSection" class="dashboard animate-fade">
+        <header>
+            <div>
+                <h2 id="txtWelcome">Puri Trip Budget</h2>
+                <p style="font-size: 14px; opacity: 0.8;" id="txtUserDisplay"></p>
+            </div>
+            <div class="nav-controls">
+                <select id="langSelect" onchange="changeLanguage()">
+                    <option value="en">English</option>
+                    <option value="bn">বাংলা</option>
+                </select>
+                <select id="themeSelect" onchange="changeTheme()">
+                    <option value="dark">Dark Theme</option>
+                    <option value="light">Light Theme</option>
+                </select>
+                <button class="delete-btn" style="padding: 8px 12px;" id="btnLogout" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <!-- Overall Statistics Breakdown (Updated with Friend Card) -->
+        <div class="summary-wrapper">
+            <div class="summary-card">
+                <h3 id="txtStatTotal">Total Expense</h3>
+                <p id="totalAmount">₹0.00</p>
+            </div>
+            <div class="summary-card">
+                <h3 id="txtStatCash">Total Cash</h3>
+                <p id="totalCash">₹0.00</p>
+            </div>
+            <div class="summary-card">
+                <h3 id="txtStatOnline">Total Online</h3>
+                <p id="totalOnline">₹0.00</p>
+            </div>
+            <div class="summary-card">
+                <h3 id="txtStatFriend">Total Friend</h3>
+                <p id="totalFriend">₹0.00</p>
+            </div>
+        </div>
+
+        <!-- Date Tabs Filter -->
+        <div class="date-tabs">
+            <button class="tab-btn active" onclick="switchDate('15')" id="tab15">15 July</button>
+            <button class="tab-btn" onclick="switchDate('16')" id="tab16">16 July</button>
+            <button class="tab-btn" onclick="switchDate('17')" id="tab17">17 July</button>
+            <button class="tab-btn" onclick="switchDate('18')" id="tab18">18 July</button>
+        </div>
+
+        <!-- Expense Actions Container -->
+        <div class="content-grid">
+            <!-- Add Expense Section -->
+            <div class="form-section">
+                <h3 id="txtFormTitle">Add Expense for <span id="selectedDateLabel">15</span> July</h3>
+                <div class="input-group">
+                    <label id="lblExpPurpose">Purpose / Expense Details</label>
+                    <input type="text" id="expPurpose" placeholder="e.g., Hotel, Train Ticket, Lunch">
+                </div>
+                <div class="input-group">
+                    <label id="lblExpAmount">Amount (₹)</label>
+                    <input type="number" id="expAmount" placeholder="0.00">
+                </div>
+                <div class="input-group">
+                    <label id="lblExpMode">Payment Mode</label>
+                    <select id="expMode">
+                        <option value="Cash" id="optCash">Cash</option>
+                        <option value="Online" id="optOnline">Online</option>
+                        <option value="Friend" id="optFriend">Friend</option>
+                    </select>
+                </div>
+                <button class="btn" id="btnAddExp" onclick="addExpense()">Save Expense</button>
+            </div>
+
+            <!-- History Summary for Selected Date -->
+            <div class="history-section">
+                <h3><span id="txtHistoryTitle">History:</span> <span id="historyDateLabel">15</span> July</h3>
+                <div id="expenseList">
+                    <!-- Dynamic Expense Rows Go Here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT ARCHITECTURE -->
+    <script>
+        // Language Dictionary
+        const languages = {
+            en: {
+                loginTitle: "Puri Trip Login", regTitle: "Create Account", forgotTitle: "Reset Password",
+                lblPhone: "Phone Number", lblPass: "Password", lblName: "Name", lblNewPass: "New Password",
+                lblShowPass: "Show Password", lblForgotLink: "Forgot Password?",
+                toggleReg: "New user? Register here", toggleLog: "Already have an account? Login", toggleBackLog: "Back to Login",
+                btnLogin: "Login", btnRegister: "Register", btnReset: "Verify & Update",
+                welcome: "Puri Trip Budget", logout: "Logout",
+                sTotal: "Total Expense", sCash: "Total Cash", sOnline: "Total Online", sFriend: "Total Friend",
+                addTitle: "Add Expense for", lblPurp: "Purpose / Expense Details",
+                lblAmt: "Amount (₹)", lblMode: "Payment Mode", btnSave: "Save Expense",
+                histTitle: "History:", empty: "No expense recorded for this date.",
+                delPrompt: "Enter security password to delete:", delWrong: "Incorrect Password! Delete denied.",
+                modeCash: "Cash", modeOnline: "Online", modeFriend: "Friend"
+            },
+            bn: {
+                loginTitle: "পুরী ট্রিপ লগইন", regTitle: "নতুন অ্যাকাউন্ট তৈরি", forgotTitle: "পাসওয়ার্ড রিসেট",
+                lblPhone: "ফোন নম্বর", lblPass: "পাসওয়ার্ড", lblName: "নাম", lblNewPass: "নতুন পাসওয়ার্ড",
+                lblShowPass: "পাসওয়ার্ড দেখুন", lblForgotLink: "পাসওয়ার্ড ভুলে গেছেন?",
+                toggleReg: "নতুন ইউজার? এখানে রেজিস্ট্রেশন করুন", toggleLog: "অ্যাকাউন্ট আছে? লগইন করুন", toggleBackLog: "লগইন পেজে ফিরে যান",
+                btnLogin: "লগইন", btnRegister: "রেজিস্ট্রেশন সম্পূর্ণ করুন", btnReset: "যাচাই ও আপডেট করুন",
+                welcome: "পুরী ট্রিপ খরচ হিসাব", logout: "লগআউট",
+                sTotal: "মোট খরচ", sCash: "মোট ক্যাশ খরচ", sOnline: "মোট অনলাইন খরচ", sFriend: "বন্ধুর দেওয়া মোট খরচ",
+                addTitle: "খরচ যোগ করুন:", lblPurp: "কী বাবদ খরচ করলেন",
+                lblAmt: "টাকার পরিমাণ (₹)", lblMode: "পেমেন্ট মাধ্যম", btnSave: "খরচ সেভ করুন",
+                histTitle: "ইতিহাস:", empty: "এই তারিখে কোনো খরচের হিসাব নেই।",
+                delPrompt: "খরচটি ডিলিট করতে সিকিউরিটি পাসওয়ার্ড দিন:", delWrong: "ভুল পাসওয়ার্ড! ডিলিট করা সম্ভব নয়।",
+                modeCash: "ক্যাশ", modeOnline: "অনলাইন", modeFriend: "বন্ধু (Friend)"
+            }
+        };
+
+        let currentLanguage = 'en';
+        let authMode = 'login';
+        let loggedInUserPhone = null;
+        let activeDate = '15';
+
+        window.onload = function() {
+            const savedUser = localStorage.getItem('session_user');
+            if(savedUser) {
+                loggedInUserPhone = savedUser;
+                showDashboard();
+            }
+        };
+
+        function togglePasswordVisibility() {
+            const isChecked = document.getElementById('showPassCheck').checked;
+            document.getElementById('authPassword').type = isChecked ? "text" : "password";
+            document.getElementById('authNewPassword').type = isChecked ? "text" : "password";
+        }
+
+        function enableForgotMode() {
+            authMode = 'forgot';
+            document.getElementById('showPassCheck').checked = false;
+            togglePasswordVisibility();
+            
+            document.getElementById('authTitle').innerText = languages[currentLanguage].forgotTitle;
+            document.getElementById('nameFieldContainer').style.display = 'block';
+            document.getElementById('passwordFieldContainer').style.display = 'none';
+            document.getElementById('newPasswordContainer').style.display = 'block';
+            document.getElementById('authOptionsContainer').style.display = 'none';
+            
+            document.getElementById('btnAuthSubmit').innerText = languages[currentLanguage].btnReset;
+            document.getElementById('authToggleBtn').innerText = languages[currentLanguage].toggleBackLog;
+        }
+
+        function toggleAuthMode() {
+            document.getElementById('showPassCheck').checked = false;
+            togglePasswordVisibility();
+
+            if (authMode === 'login') {
+                authMode = 'register';
+                document.getElementById('authTitle').innerText = languages[currentLanguage].regTitle;
+                document.getElementById('nameFieldContainer').style.display = 'block';
+                document.getElementById('passwordFieldContainer').style.display = 'block';
+                document.getElementById('newPasswordContainer').style.display = 'none';
+                document.getElementById('authOptionsContainer').style.display = 'flex';
+                document.getElementById('btnAuthSubmit').innerText = languages[currentLanguage].btnRegister;
+                document.getElementById('authToggleBtn').innerText = languages[currentLanguage].toggleLog;
+            } else {
+                authMode = 'login';
+                document.getElementById('authTitle').innerText = languages[currentLanguage].loginTitle;
+                document.getElementById('nameFieldContainer').style.display = 'none';
+                document.getElementById('passwordFieldContainer').style.display = 'block';
+                document.getElementById('newPasswordContainer').style.display = 'none';
+                document.getElementById('authOptionsContainer').style.display = 'flex';
+                document.getElementById('btnAuthSubmit').innerText = languages[currentLanguage].btnLogin;
+                document.getElementById('authToggleBtn').innerText = languages[currentLanguage].toggleReg;
+            }
+        }
+
+        function handleAuth() {
+            const phone = document.getElementById('authPhone').value.trim();
+            const name = document.getElementById('authName').value.trim();
+            const password = document.getElementById('authPassword').value.trim();
+            const newPassword = document.getElementById('authNewPassword').value.trim();
+
+            let users = JSON.parse(localStorage.getItem('trip_users')) || {};
+
+            if (authMode === 'register') {
+                if(!phone || !password || !name) {
+                    alert(currentLanguage === 'en' ? "Please fill in all details." : "অনুগ্রহ করে সব তথ্য দিন।");
+                    return;
+                }
+                if(users[phone]) {
+                    alert(currentLanguage === 'en' ? "User already exists! Please login." : "এই নাম্বারে অ্যাকাউন্ট অলরেডি আছে! লগইন করুন।");
+                    return;
+                }
+                users[phone] = { name: name, password: password, data: {} };
+                localStorage.setItem('trip_users', JSON.stringify(users));
+                alert(currentLanguage === 'en' ? "Registration Successful! Please login." : "রেজিস্ট্রেশন সফল হয়েছে! লগইন করুন।");
+                toggleAuthMode();
+
+            } else if (authMode === 'login') {
+                if(!phone || !password) {
+                    alert(currentLanguage === 'en' ? "Provide valid credentials!" : "সঠিক ফোন নম্বর ও পাসওয়ার্ড দিন!");
+                    return;
+                }
+                if(users[phone] && users[phone].password === password) {
+                    loggedInUserPhone = phone;
+                    localStorage.setItem('session_user', phone);
+                    showDashboard();
+                } else {
+                    alert(currentLanguage === 'en' ? "Invalid Phone or Password!" : "ভুল ফোন নম্বর বা পাসওয়ার্ড!");
+                }
+
+            } else if (authMode === 'forgot') {
+                if(!phone || !name || !newPassword) {
+                    alert(currentLanguage === 'en' ? "All fields are required for password reset." : "পাসওয়ার্ড রিসেট করার জন্য সমস্ত তথ্য দেওয়া আবশ্যক।");
+                    return;
+                }
+                if(users[phone] && users[phone].name.toLowerCase() === name.toLowerCase()) {
+                    users[phone].password = newPassword;
+                    localStorage.setItem('trip_users', JSON.stringify(users));
+                    alert(currentLanguage === 'en' ? "Password updated successfully!" : "পাসওয়ার্ড সফলভাবে আপডেট হয়েছে!");
+                    toggleAuthMode();
+                } else {
+                    alert(currentLanguage === 'en' ? "Name or Phone number did not match!" : "নাম অথবা ফোন নম্বর মিলল না!");
+                }
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'block';
+            
+            const users = JSON.parse(localStorage.getItem('trip_users'));
+            document.getElementById('txtUserDisplay').innerText = `User: ${users[loggedInUserPhone].name} (${loggedInUserPhone})`;
+            
+            updateUIStrings();
+            switchDate(activeDate);
+        }
+
+        function logout() {
+            localStorage.removeItem('session_user');
+            loggedInUserPhone = null;
+            document.getElementById('dashboardSection').style.display = 'none';
+            document.getElementById('authSection').style.display = 'block';
+            authMode = 'login';
+            toggleAuthMode();
+            toggleAuthMode();
+            document.getElementById('authPhone').value = '';
+            document.getElementById('authPassword').value = '';
+            document.getElementById('authName').value = '';
+            document.getElementById('authNewPassword').value = '';
+        }
+
+        function changeLanguage() {
+            currentLanguage = document.getElementById('langSelect').value;
+            updateUIStrings();
+        }
+
+        function updateUIStrings() {
+            const l = languages[currentLanguage];
+            
+            document.getElementById('txtWelcome').innerText = l.welcome;
+            document.getElementById('btnLogout').innerText = l.logout;
+            
+            document.getElementById('txtStatTotal').innerText = l.sTotal;
+            document.getElementById('txtStatCash').innerText = l.sCash;
+            document.getElementById('txtStatOnline').innerText = l.sOnline;
+            document.getElementById('txtStatFriend').innerText = l.sFriend;
+
+            document.getElementById('txtFormTitle').innerHTML = `${l.addTitle} <span id="selectedDateLabel">${activeDate}</span> ${currentLanguage === 'en'?'July':'জুলাই'}`;
+            document.getElementById('lblExpPurpose').innerText = l.lblPurp;
+            document.getElementById('lblExpAmount').innerText = l.lblAmt;
+            document.getElementById('lblExpMode').innerText = l.lblMode;
+            document.getElementById('btnAddExp').innerText = l.btnSave;
+            document.getElementById('txtHistoryTitle').innerText = l.histTitle;
+
+            document.getElementById('optCash').innerText = l.modeCash;
+            document.getElementById('optOnline').innerText = l.modeOnline;
+            document.getElementById('optFriend').innerText = l.modeFriend;
+
+            document.getElementById('lblLabelPhone').innerText = l.lblPhone;
+            document.getElementById('lblLabelPass').innerText = l.lblPass;
+            document.getElementById('lblLabelName').innerText = l.lblName;
+            document.getElementById('lblLabelNewPass').innerText = l.lblNewPass;
+            document.getElementById('lblShowPass').innerText = l.lblShowPass;
+            document.getElementById('forgotLinkBtn').innerText = l.lblForgotLink;
+            
+            if(authMode === 'login') {
+                document.getElementById('authTitle').innerText = l.loginTitle;
+                document.getElementById('btnAuthSubmit').innerText = l.btnLogin;
+                document.getElementById('authToggleBtn').innerText = l.toggleReg;
+            } else if(authMode === 'register') {
+                document.getElementById('authTitle').innerText = l.regTitle;
+                document.getElementById('btnAuthSubmit').innerText = l.btnRegister;
+                document.getElementById('authToggleBtn').innerText = l.toggleLog;
+            } else if(authMode === 'forgot') {
+                document.getElementById('authTitle').innerText = l.forgotTitle;
+                document.getElementById('btnAuthSubmit').innerText = l.btnReset;
+                document.getElementById('authToggleBtn').innerText = l.toggleBackLog;
+            }
+
+            renderExpenses();
+        }
+
+        function changeTheme() {
+            const theme = document.getElementById('themeSelect').value;
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+
+        function switchDate(date) {
+            activeDate = date;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab${date}`).classList.add('active');
+            
+            document.getElementById('selectedDateLabel').innerText = date;
+            document.getElementById('historyDateLabel').innerText = date;
+            
+            renderExpenses();
+        }
+
+        function addExpense() {
+            const purpose = document.getElementById('expPurpose').value.trim();
+            const amount = parseFloat(document.getElementById('expAmount').value);
+            const mode = document.getElementById('expMode').value;
+
+            if(!purpose || isNaN(amount) || amount <= 0) {
+                alert(currentLanguage === 'en' ? "Provide valid purpose and amount details!" : "সঠিক তথ্য এবং খরচের পরিমাণ লিখুন!");
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem('trip_users'));
+            if(!users[loggedInUserPhone].data) users[loggedInUserPhone].data = {};
+            if(!users[loggedInUserPhone].data[activeDate]) users[loggedInUserPhone].data[activeDate] = [];
+
+            const newRecord = {
+                id: Date.now(),
+                purpose: purpose,
+                amount: amount,
+                mode: mode
+            };
+
+            users[loggedInUserPhone].data[activeDate].push(newRecord);
+            localStorage.setItem('trip_users', JSON.stringify(users));
+
+            document.getElementById('expPurpose').value = '';
+            document.getElementById('expAmount').value = '';
+            
+            renderExpenses();
+        }
+
+        function deleteExpense(id) {
+            const passCheck = prompt(languages[currentLanguage].delPrompt);
+            if(passCheck === "2008") {
+                let users = JSON.parse(localStorage.getItem('trip_users'));
+                let dateRecords = users[loggedInUserPhone].data[activeDate] || [];
+                
+                users[loggedInUserPhone].data[activeDate] = dateRecords.filter(item => item.id !== id);
+                localStorage.setItem('trip_users', JSON.stringify(users));
+                renderExpenses();
+            } else if(passCheck !== null) {
+                alert(languages[currentLanguage].delWrong);
+            }
+        }
+
+        function renderExpenses() {
+            let users = JSON.parse(localStorage.getItem('trip_users'));
+            let userData = users[loggedInUserPhone]?.data || {};
+            
+            let listContainer = document.getElementById('expenseList');
+            listContainer.innerHTML = '';
+
+            let netTotal = 0, netCash = 0, netOnline = 0, netFriend = 0;
+            
+            Object.keys(userData).forEach(dateKey => {
+                userData[dateKey].forEach(item => {
+                    netTotal += item.amount;
+                    if(item.mode.toLowerCase() === 'cash') netCash += item.amount;
+                    if(item.mode.toLowerCase() === 'online') netOnline += item.amount;
+                    if(item.mode.toLowerCase() === 'friend') netFriend += item.amount;
+                });
+            });
+
+            document.getElementById('totalAmount').innerText = `₹${netTotal.toFixed(2)}`;
+            document.getElementById('totalCash').innerText = `₹${netCash.toFixed(2)}`;
+            document.getElementById('totalOnline').innerText = `₹${netOnline.toFixed(2)}`;
+            document.getElementById('totalFriend').innerText = `₹${netFriend.toFixed(2)}`;
+
+            let currentDayRecords = userData[activeDate] || [];
+            if(currentDayRecords.length === 0) {
+                listContainer.innerHTML = `<p class="empty-msg">${languages[currentLanguage].empty}</p>`;
+                return;
+            }
+
+            currentDayRecords.forEach(item => {
+                let displayMode = item.mode;
+                if(currentLanguage === 'bn') {
+                    if(item.mode === 'Cash') displayMode = 'ক্যাশ';
+                    if(item.mode === 'Online') displayMode = 'অনলাইন';
+                    if(item.mode === 'Friend') displayMode = 'বন্ধু';
+                }
+
+                let div = document.createElement('div');
+                div.className = "expense-item";
+                div.innerHTML = `
+                    <div class="expense-info">
+                        <p>${item.purpose}</p>
+                        <span>Mode: ${displayMode}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-weight: bold; color: var(--accent-color)">₹${item.amount.toFixed(2)}</span>
+                        <button class="delete-btn" onclick="deleteExpense(${item.id})">${currentLanguage === 'en' ? 'Delete' : 'ডিলিট'}</button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
